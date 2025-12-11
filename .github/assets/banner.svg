@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+  <defs>
+    <!-- Gradient for text -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f97316">
+        <animate attributeName="stop-color" values="#f97316;#ec4899;#8b5cf6;#3b82f6;#f97316" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" style="stop-color:#ec4899">
+        <animate attributeName="stop-color" values="#ec4899;#8b5cf6;#3b82f6;#f97316;#ec4899" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" style="stop-color:#8b5cf6">
+        <animate attributeName="stop-color" values="#8b5cf6;#3b82f6;#f97316;#ec4899;#8b5cf6" dur="4s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Star sparkle -->
+    <g id="star">
+      <polygon points="0,-8 2,-2 8,0 2,2 0,8 -2,2 -8,0 -2,-2" fill="white">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/>
+      </polygon>
+    </g>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="200" fill="#0f172a"/>
+
+  <!-- Animated particles -->
+  <circle cx="100" cy="50" r="2" fill="#f97316" opacity="0.6">
+    <animate attributeName="cy" values="50;150;50" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="200" cy="150" r="1.5" fill="#ec4899" opacity="0.5">
+    <animate attributeName="cy" values="150;50;150" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="600" cy="80" r="2" fill="#8b5cf6" opacity="0.6">
+    <animate attributeName="cy" values="80;120;80" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="700" cy="130" r="1.5" fill="#3b82f6" opacity="0.5">
+    <animate attributeName="cy" values="130;70;130" dur="3.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Decorative stars -->
+  <use href="#star" x="150" y="60">
+    <animateTransform attributeName="transform" type="rotate" values="0 150 60;360 150 60" dur="8s" repeatCount="indefinite"/>
+  </use>
+  <use href="#star" x="650" y="140" transform="scale(0.7)">
+    <animateTransform attributeName="transform" type="rotate" values="360 455 98;0 455 98" dur="6s" repeatCount="indefinite"/>
+  </use>
+  <use href="#star" x="720" y="50" transform="scale(0.5)">
+    <animateTransform attributeName="transform" type="rotate" values="0 360 25;360 360 25" dur="10s" repeatCount="indefinite"/>
+  </use>
+
+  <!-- Main title -->
+  <text x="400" y="115" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="bold" fill="url(#textGradient)" filter="url(#glow)">
+    Vibestar
+  </text>
+
+  <!-- Subtitle -->
+  <text x="400" y="155" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#94a3b8">
+    Full-stack template for the AI era
+  </text>
+
+  <!-- Tech badges line -->
+  <g transform="translate(400, 180)" text-anchor="middle">
+    <text font-family="monospace" font-size="12" fill="#64748b">
+      Cloudflare Workers  |  React Router v7  |  Workers AI  |  Vectorize RAG
+    </text>
+  </g>
+</svg>
