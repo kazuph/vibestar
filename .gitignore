@@ -1,0 +1,31 @@
+.env
+!.env.example
+.DS_Store
+.react-router
+build
+node_modules
+*.tsbuildinfo
+
+# Cloudflare specific
+.mf
+.wrangler
+
+# Temp/backup directories
+.workers-old
+.vibestar-template-old
+
+# Local development
+.dev.vars
+local.db
+local.db-*
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# PNPM local store
+.pnpm-store/
+
+# Test artifacts (screenshots, videos)
+.artifacts/

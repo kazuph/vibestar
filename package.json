@@ -1,0 +1,63 @@
+{
+  "name": "vibestar",
+  "version": "1.0.0",
+  "description": "AI時代のフルスタック開発テンプレート",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "workerd",
+      "esbuild"
+    ]
+  },
+  "scripts": {
+    "dev": "concurrently -n db,mail,web -c blue,magenta,green \"pnpm dev:db\" \"pnpm dev:mail\" \"pnpm dev:web\"",
+    "dev:db": "turso dev --db-file local.db --port 18080",
+    "dev:mail": "mailpit --listen :18025 --smtp :11025",
+    "dev:web": "react-router build && wrangler dev --port 15173",
+    "build": "react-router build",
+    "typecheck": "react-router typegen && tsc --build --noEmit",
+    "lint": "prettier --check .",
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "format": "prettier --write .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "services:stop": "pkill -f mailpit || true",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "@react-router/serve": "^7.7.1",
+    "better-auth": "^1.4.5",
+    "drizzle-orm": "^0.45.0",
+    "hono": "^4.6.0",
+    "isbot": "^5.1.29",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router": "^7.7.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250803.0",
+    "@hono/vite-dev-server": "^0.18.0",
+    "@playwright/test": "^1.57.0",
+    "@react-router/dev": "^7.7.1",
+    "@tailwindcss/vite": "^4.1.11",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "concurrently": "^9.2.1",
+    "drizzle-kit": "^0.31.8",
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.9.2",
+    "vite": "^7.0.6",
+    "vite-tsconfig-paths": "^5.1.4",
+    "wrangler": "^4.27.0"
+  }
+}
