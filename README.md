@@ -19,11 +19,11 @@
 
 ## Features
 
-- **Email OTP Authentication** — Secure passwordless login via Better Auth with automatic user registration
-- **AI Chat with Streaming** — Real-time conversational AI using Workers AI (gpt-oss-120b)
-- **RAG Document Search** — Upload documents and query them with Vectorize embeddings (plamo-embedding-1b)
-- **Edge-Native Performance** — Runs on Cloudflare Workers globally with sub-100ms latency
-- **E2E Tested** — Comprehensive Playwright tests with zero mocking, real database, real email delivery
+- 🔐 **Email OTP Authentication** — Secure passwordless login via Better Auth with automatic user registration
+- 💬 **AI Chat with Streaming** — Real-time conversational AI using Workers AI (gpt-oss-120b)
+- 📚 **RAG Document Search** — Upload documents and query them with Vectorize embeddings (plamo-embedding-1b)
+- ⚡ **Edge-Native Performance** — Runs on Cloudflare Workers globally with sub-100ms latency
+- 🧪 **E2E Tested** — Comprehensive Playwright tests with zero mocking, real database, real email delivery
 
 ## Quick Start
 
