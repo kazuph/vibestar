@@ -1,7 +1,7 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
-  index("routes/home.tsx"),
+  index("routes/_index.tsx"),
 
   // API routes
   route("/api/health", "routes/api.health.ts"),
@@ -16,7 +16,4 @@ export default [
 
   // Protected routes
   route("/dashboard", "routes/dashboard._index.tsx"),
-
-  // Catch-all route (must be last)
-  route("/:id", "routes/id.tsx"),
 ] satisfies RouteConfig;

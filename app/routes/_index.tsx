@@ -1,12 +1,11 @@
 import { Welcome } from "~/pages/welcome/welcome";
-import { Route } from "./+types/id";
+import { Route } from "./+types/_index";
 
 export const meta: Route.MetaFunction = () => {
   return [{ title: "New React Router App" }, { name: "description", content: "Welcome to React Router!" }];
 };
 
-export function loader({ context, params }: Route.LoaderArgs) {
-  params.id;
+export function loader({ context }: Route.LoaderArgs) {
   return { message: context.cloudflare.env.VALUE_FROM_CLOUDFLARE };
 }
 
