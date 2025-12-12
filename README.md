@@ -25,6 +25,39 @@
 - ⚡ **Edge-Native Performance** — Runs on Cloudflare Workers globally with sub-100ms latency
 - 🧪 **E2E Tested** — Comprehensive Playwright tests with zero mocking, real database, real email delivery
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src=".github/assets/screenshots/01-signup.png" width="250" alt="Sign Up" /><br />
+      <sub><b>Sign Up</b></sub>
+    </td>
+    <td align="center">
+      <img src=".github/assets/screenshots/02-verify-otp.png" width="250" alt="OTP Verification" /><br />
+      <sub><b>OTP Verification</b></sub>
+    </td>
+    <td align="center">
+      <img src=".github/assets/screenshots/03-dashboard.png" width="250" alt="Dashboard" /><br />
+      <sub><b>Dashboard</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src=".github/assets/screenshots/04-ai-chat.png" width="250" alt="AI Chat" /><br />
+      <sub><b>AI Chat</b></sub>
+    </td>
+    <td align="center">
+      <img src=".github/assets/screenshots/05-documents.png" width="250" alt="Documents Tab" /><br />
+      <sub><b>Document Management</b></sub>
+    </td>
+    <td align="center">
+      <img src=".github/assets/screenshots/06-document-uploaded.png" width="250" alt="RAG Document Upload" /><br />
+      <sub><b>RAG Document Upload</b></sub>
+    </td>
+  </tr>
+</table>
+
 ## Quick Start
 
 ```bash
