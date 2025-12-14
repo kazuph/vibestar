@@ -92,7 +92,7 @@ Open http://localhost:15173 to see the app running.
 | **Auth** | Better Auth | Email OTP authentication |
 | **Email** | Resend / Mailpit | Transactional emails |
 | **AI Chat** | Workers AI (`gpt-oss-120b`) | Large language model inference |
-| **Embeddings** | Workers AI (`plamo-embedding-1b`) | 1024-dimensional text embeddings |
+| **Embeddings** | Workers AI (`plamo-embedding-1b`) | 2048-dim output, truncated to 1536 for Vectorize |
 | **Vector DB** | Cloudflare Vectorize | Semantic search and RAG |
 | **UI** | shadcn/ui + Tailwind CSS | Modern component library |
 | **Testing** | Playwright | End-to-end browser testing |
