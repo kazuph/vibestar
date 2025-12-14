@@ -114,19 +114,19 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
     switch (status) {
       case "ready":
         return (
-          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+          <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
             Ready
           </span>
         );
       case "processing":
         return (
-          <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+          <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
             Processing...
           </span>
         );
       case "failed":
         return (
-          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+          <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
             Failed
           </span>
         );
@@ -135,7 +135,7 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8 text-gray-500">
+      <div className="flex items-center justify-center py-8 text-warm-500">
         Loading documents...
       </div>
     );
@@ -143,7 +143,7 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
 
   if (error) {
     return (
-      <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
         {error}
         <button
           onClick={loadDocuments}
@@ -157,55 +157,55 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
 
   if (documents.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
+      <div className="rounded-lg border border-dashed border-warm-300 p-8 text-center text-warm-500">
         No documents uploaded yet. Upload a document to enable RAG.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden rounded-lg border border-warm-200">
+      <table className="min-w-full divide-y divide-warm-200">
+        <thead className="bg-warm-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-warm-500">
               Title
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-warm-500">
               Type
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-warm-500">
               Status
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-warm-500">
               Created
             </th>
-            <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+            <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-warm-500">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-y divide-warm-200 bg-white">
           {documents.map((doc) => (
-            <tr key={doc.id} className="hover:bg-gray-50">
+            <tr key={doc.id} className="transition-colors hover:bg-warm-50">
               <td className="whitespace-nowrap px-4 py-3">
-                <div className="text-sm font-medium text-gray-900">{doc.title}</div>
-                <div className="text-xs text-gray-500">{doc.id.slice(0, 8)}...</div>
+                <div className="text-sm font-medium text-warm-900">{doc.title}</div>
+                <div className="text-xs text-warm-500">{doc.id.slice(0, 8)}...</div>
               </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+              <td className="whitespace-nowrap px-4 py-3 text-sm text-warm-500">
                 {doc.mimeType}
               </td>
               <td className="whitespace-nowrap px-4 py-3">
                 {getStatusBadge(doc.status)}
               </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+              <td className="whitespace-nowrap px-4 py-3 text-sm text-warm-500">
                 {formatDate(doc.createdAt)}
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-right">
                 <button
                   onClick={() => handleDelete(doc.id)}
                   disabled={deletingId === doc.id}
-                  className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                  className="text-sm text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
                 >
                   {deletingId === doc.id ? "Deleting..." : "Delete"}
                 </button>

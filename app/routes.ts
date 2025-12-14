@@ -8,6 +8,7 @@ export default [
   route("/api/auth/*", "routes/api.auth.$.ts"),
   route("/api/chat", "routes/api.chat.ts"),
   route("/api/documents", "routes/api.documents.ts"),
+  route("/api/ai-test", "routes/api.ai-test.ts"),
 
   // Auth routes
   route("/auth/signup", "routes/auth.signup.tsx"),

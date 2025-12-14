@@ -117,45 +117,8 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
   }
 
-  // Stream response
+  // Stream response from Workers AI (remote binding enabled in wrangler.toml)
   try {
-    // Check if AI binding is available (not available in local dev without remote bindings)
-    const isLocalDev = !env.AI || typeof env.AI.run !== "function";
-
-    if (isLocalDev) {
-      // Return a simulated response for local development
-      const simulatedResponse = body.useRag
-        ? `[ローカル開発モード] RAGモードが有効です。アップロードされたドキュメントを参照して回答します。\n\nご質問: "${body.message}"\n\n※ Workers AIはローカルでは利用できないため、実際のAI応答は本番環境でご確認ください。`
-        : `[ローカル開発モード] ご質問を受け付けました。\n\n「${body.message}」\n\n※ Workers AIはローカルでは利用できないため、実際のAI応答は本番環境でご確認ください。`;
-
-      // Save assistant message
-      const assistantMessage: NewMessage = {
-        id: crypto.randomUUID(),
-        conversationId: conversationId!,
-        role: "assistant",
-        content: simulatedResponse,
-      };
-      await db.insert(message).values(assistantMessage);
-
-      // Create a simple readable stream for the response
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(encoder.encode(simulatedResponse));
-          controller.close();
-        },
-      });
-
-      return new Response(stream, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-          "X-Conversation-Id": conversationId,
-        },
-      });
-    }
-
     const stream = await chatCompletionStream(env.AI, chatMessages, systemPrompt);
 
     // Create a transform stream to capture the full response
@@ -166,6 +129,8 @@ export async function action({ request, context }: Route.ActionArgs) {
     const transformStream = new TransformStream({
       transform(chunk, controller) {
         const text = decoder.decode(chunk);
+        // DEBUG: Log raw stream data to understand the format
+        console.log("[DEBUG STREAM]:", JSON.stringify(text));
         fullResponse += text;
         controller.enqueue(chunk);
       },

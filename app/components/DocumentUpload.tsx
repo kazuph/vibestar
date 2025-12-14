@@ -99,8 +99,8 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
         onClick={() => fileInputRef.current?.click()}
         className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
           isDragging
-            ? "border-blue-500 bg-blue-50"
-            : "border-gray-300 hover:border-gray-400"
+            ? "border-accent-500 bg-accent-50"
+            : "border-warm-300 hover:border-warm-400"
         } ${isUploading ? "pointer-events-none opacity-50" : ""}`}
       >
         <input
@@ -113,7 +113,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
         <div className="flex flex-col items-center gap-2">
           <svg
-            className="h-10 w-10 text-gray-400"
+            className="h-10 w-10 text-warm-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -127,14 +127,14 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           </svg>
 
           {isUploading ? (
-            <p className="text-gray-600">Uploading...</p>
+            <p className="text-warm-600">Uploading...</p>
           ) : (
             <>
-              <p className="text-gray-600">
-                <span className="font-medium text-blue-600">Click to upload</span> or
+              <p className="text-warm-600">
+                <span className="font-medium text-accent-600">Click to upload</span> or
                 drag and drop
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-warm-400">
                 TXT, MD, JSON, CSV (max 1MB)
               </p>
             </>
@@ -144,14 +144,14 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
       {/* Error message */}
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
           {error}
         </div>
       )}
 
       {/* Success message */}
       {success && (
-        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-600">
           {success}
         </div>
       )}

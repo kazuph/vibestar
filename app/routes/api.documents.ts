@@ -104,41 +104,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   await db.insert(document).values(newDocument);
 
-  // Check if AI binding is available (not available in local dev without remote bindings)
-  const isLocalDev = !env.AI || typeof env.AI.run !== "function";
-
-  // Process document in background using waitUntil
+  // Process document in background using waitUntil (remote AI binding enabled in wrangler.toml)
   context.cloudflare.ctx.waitUntil(
     (async () => {
       try {
-        if (isLocalDev) {
-          // Local development mode: skip vectorization, just mark as ready
-          console.log(
-            `[Local Dev] Skipping vectorization for document ${newDocument.id}`
-          );
-
-          // Create a dummy chunk record for the document
-          const dummyChunk: NewDocumentChunk = {
-            id: crypto.randomUUID(),
-            documentId: newDocument.id,
-            chunkIndex: 0,
-            content: content.slice(0, 500),
-            vectorId: null,
-          };
-          await db.insert(documentChunk).values(dummyChunk);
-
-          // Update document status to ready
-          await db
-            .update(document)
-            .set({ status: "ready", updatedAt: new Date() })
-            .where(eq(document.id, newDocument.id));
-
-          console.log(
-            `[Local Dev] Document ${newDocument.id} marked as ready (no vectorization)`
-          );
-          return;
-        }
-
         const { chunkIds, vectorIds } = await processDocument(
           env,
           newDocument.id,

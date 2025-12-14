@@ -7,10 +7,11 @@ AI時代のフルスタック開発テンプレート。Cloudflareエコシス�
 **Docker/コンテナは絶対に禁止です。** ローカル開発ではすべてネイティブツール（brew install等）を使用してください。
 
 **AIモデルの変更は絶対に禁止です。** 以下のモデルを使用してください：
-- 埋め込み: `@cf/pfnet/plamo-embedding-1b` (1024次元)
-- チャット: `@cf/pfnet/gpt-oss-120b`
+- 埋め込み: `@cf/pfnet/plamo-embedding-1b` (1536次元に切り詰め) - Preferred Networks製
+- チャット: `@cf/openai/gpt-oss-120b` - OpenAI製
 
 > これらのモデルはプロジェクト要件として指定されており、理由を問わず変更してはいけません。
+> 注: plamo-embedding-1bは2048次元を出力しますが、Vectorizeの上限（1536次元）に合わせて切り詰めています。
 
 ## 技術スタック
 

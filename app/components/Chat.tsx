@@ -107,35 +107,14 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      let buffer = "";
-
+      // Read raw text stream (not SSE format)
+      // Workers AI gpt-oss-120b returns plain text via simulated streaming
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-
-        // Parse SSE format from Workers AI
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
-
-          const data = trimmedLine.slice(6); // Remove "data: " prefix
-          if (data === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(data) as { response?: string | null };
-            if (parsed.response) {
-              assistantContent += parsed.response;
-            }
-          } catch {
-            // Skip invalid JSON
-          }
-        }
+        assistantContent += chunk;
 
         setMessages((prev) =>
           prev.map((msg) =>
@@ -177,23 +156,23 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
   }
 
   return (
-    <div className="flex h-[600px] flex-col rounded-lg border border-gray-200 bg-white">
+    <div className="flex h-[600px] flex-col rounded-lg border border-warm-200 bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-        <h3 className="font-medium text-gray-900">AI Chat</h3>
+      <div className="flex items-center justify-between border-b border-warm-200 px-4 py-3">
+        <h3 className="font-medium text-warm-900">AI Chat</h3>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-warm-600">
             <input
               type="checkbox"
               checked={enableRag}
               onChange={(e) => setEnableRag(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-warm-300 text-accent-600 focus:ring-accent-500"
             />
             Use documents (RAG)
           </label>
           <button
             onClick={handleNewChat}
-            className="rounded bg-gray-100 px-3 py-1 text-sm text-gray-700 hover:bg-gray-200"
+            className="rounded-lg border border-warm-300 bg-white px-3 py-1 text-sm text-warm-700 transition-colors hover:bg-warm-50"
           >
             New Chat
           </button>
@@ -203,7 +182,7 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-gray-400">
+          <div className="flex h-full items-center justify-center text-warm-400">
             Start a conversation
           </div>
         ) : (
@@ -217,8 +196,8 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 ${
                     message.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-900"
+                      ? "bg-accent-600 text-white"
+                      : "border border-warm-200 bg-warm-50 text-warm-900"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
@@ -231,7 +210,7 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">
+      <form onSubmit={handleSubmit} className="border-t border-warm-200 p-4">
         <div className="flex gap-2">
           <input
             type="text"
@@ -239,13 +218,13 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
             disabled={isLoading}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+            className="flex-1 rounded-lg border border-warm-300 px-4 py-2 text-warm-900 placeholder-warm-400 transition-colors focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20 disabled:bg-warm-100"
           />
           {isLoading ? (
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700"
+              className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
             >
               Cancel
             </button>
@@ -253,7 +232,7 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
             <button
               type="submit"
               disabled={!input.trim()}
-              className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="rounded-lg bg-accent-600 px-4 py-2 font-medium text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Send
             </button>

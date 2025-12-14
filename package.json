@@ -28,7 +28,8 @@
     "services:stop": "pkill -f mailpit || true",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "otp": "curl -s http://localhost:18025/api/v1/messages | jq -r '.messages[0].ID' | xargs -I{} curl -s 'http://localhost:18025/api/v1/message/{}' | jq -r '.Text' | grep -oE '[0-9]{6}' | head -1"
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",

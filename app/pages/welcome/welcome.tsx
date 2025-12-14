@@ -1,80 +1,292 @@
-import logoDark from "./logo-dark.svg";
-import logoLight from "./logo-light.svg";
+import { Link } from "react-router";
 
 export function Welcome({ message }: { message: string }) {
   return (
-    <main className="flex items-center justify-center pt-16 pb-4">
-      <div className="flex min-h-0 flex-1 flex-col items-center gap-16">
-        <header className="flex flex-col items-center gap-9">
-          <div className="w-[500px] max-w-[100vw] p-4">
-            <img src={logoLight} alt="React Router" className="block w-full dark:hidden" />
-            <img src={logoDark} alt="React Router" className="hidden w-full dark:block" />
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className="border-b border-warm-200">
+        <div className="mx-auto max-w-6xl px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600">
+                <svg
+                  className="h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+                  />
+                </svg>
+              </div>
+              <span className="text-xl font-semibold tracking-tight text-warm-900">
+                Vibestar
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/auth/signin"
+                className="px-4 py-2 text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/auth/signup"
+                className="rounded-lg bg-accent-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-700"
+              >
+                Get started
+              </Link>
+            </div>
           </div>
-        </header>
-        <div className="w-full max-w-[300px] space-y-6 px-4">
-          <nav className="space-y-4 rounded-3xl border border-gray-200 p-6 dark:border-gray-700">
-            <p className="text-center leading-6 text-gray-700 dark:text-gray-200">What&apos;s next?</p>
-            <ul>
-              {resources.map(({ href, text, icon }) => (
-                <li key={href}>
-                  <a
-                    className="group flex items-center gap-3 self-stretch p-3 leading-normal text-blue-700 hover:underline dark:text-blue-500"
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {icon}
-                    {text}
-                  </a>
-                </li>
-              ))}
-              <li className="self-stretch p-3 leading-normal">{message}</li>
-            </ul>
-          </nav>
         </div>
-      </div>
-    </main>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="mx-auto max-w-6xl px-6">
+        <div className="py-24 text-center md:py-32">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-warm-200 bg-warm-50 px-4 py-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-sm font-medium text-warm-700">
+              Production-ready template
+            </span>
+          </div>
+          <h1 className="mx-auto max-w-4xl text-4xl font-bold tracking-tight text-warm-900 md:text-5xl lg:text-6xl">
+            Build AI-powered apps on the{" "}
+            <span className="text-accent-600">Cloudflare</span> edge
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-warm-600">
+            Full-stack starter with authentication, AI chat, RAG document search,
+            and E2E testing. Everything you need to ship fast.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link
+              to="/auth/signup"
+              className="inline-flex items-center gap-2 rounded-lg bg-accent-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-accent-700"
+            >
+              Start building
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                />
+              </svg>
+            </Link>
+            <a
+              href="https://github.com/kazuph/vibestar"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-warm-300 bg-white px-6 py-3 text-base font-medium text-warm-700 transition-colors hover:border-warm-400 hover:bg-warm-50"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+
+        {/* Features Grid */}
+        <div className="border-t border-warm-200 py-20">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="rounded-xl border border-warm-200 bg-white p-6"
+              >
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-warm-100">
+                  {feature.icon}
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-warm-900">
+                  {feature.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-warm-600">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tech Stack */}
+        <div className="border-t border-warm-200 py-20">
+          <h2 className="mb-8 text-center text-2xl font-semibold text-warm-900">
+            Built with modern tools
+          </h2>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            {techStack.map((tech) => (
+              <div
+                key={tech}
+                className="rounded-full border border-warm-200 bg-warm-50 px-4 py-2 text-sm font-medium text-warm-700"
+              >
+                {tech}
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-warm-200 py-8">
+        <div className="mx-auto max-w-6xl px-6">
+          <p className="text-center text-sm text-warm-500">
+            {message || "Built with the Cloudflare ecosystem"}
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }
 
-const resources = [
+const features = [
   {
-    href: "https://reactrouter.com/docs",
-    text: "React Router Docs",
+    title: "Email OTP Auth",
+    description:
+      "Secure passwordless authentication with automatic user registration on first sign-in.",
     icon: (
       <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 20 20"
+        className="h-5 w-5 text-warm-600"
         fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
       >
         <path
-          d="M9.99981 10.0751V9.99992M17.4688 17.4688C15.889 19.0485 11.2645 16.9853 7.13958 12.8604C3.01467 8.73546 0.951405 4.11091 2.53116 2.53116C4.11091 0.951405 8.73546 3.01467 12.8604 7.13958C16.9853 11.2645 19.0485 15.889 17.4688 17.4688ZM2.53132 17.4688C0.951566 15.8891 3.01483 11.2645 7.13974 7.13963C11.2647 3.01471 15.8892 0.951453 17.469 2.53121C19.0487 4.11096 16.9854 8.73551 12.8605 12.8604C8.73562 16.9853 4.11107 19.0486 2.53132 17.4688Z"
-          strokeWidth="1.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
         />
       </svg>
     ),
   },
   {
-    href: "https://rmx.as/discord",
-    text: "Join Discord",
+    title: "AI Chat Streaming",
+    description:
+      "Real-time conversational AI with Workers AI, delivering responses at the edge.",
     icon: (
       <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 24 20"
+        className="h-5 w-5 text-warm-600"
         fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
       >
         <path
-          d="M15.0686 1.25995L14.5477 1.17423L14.2913 1.63578C14.1754 1.84439 14.0545 2.08275 13.9422 2.31963C12.6461 2.16488 11.3406 2.16505 10.0445 2.32014C9.92822 2.08178 9.80478 1.84975 9.67412 1.62413L9.41449 1.17584L8.90333 1.25995C7.33547 1.51794 5.80717 1.99419 4.37748 2.66939L4.19 2.75793L4.07461 2.93019C1.23864 7.16437 0.46302 11.3053 0.838165 15.3924L0.868838 15.7266L1.13844 15.9264C2.81818 17.1714 4.68053 18.1233 6.68582 18.719L7.18892 18.8684L7.50166 18.4469C7.96179 17.8268 8.36504 17.1824 8.709 16.4944L8.71099 16.4904C10.8645 17.0471 13.128 17.0485 15.2821 16.4947C15.6261 17.1826 16.0293 17.8269 16.4892 18.4469L16.805 18.8725L17.3116 18.717C19.3056 18.105 21.1876 17.1751 22.8559 15.9238L23.1224 15.724L23.1528 15.3923C23.5873 10.6524 22.3579 6.53306 19.8947 2.90714L19.7759 2.73227L19.5833 2.64518C18.1437 1.99439 16.6386 1.51826 15.0686 1.25995ZM16.6074 10.7755L16.6074 10.7756C16.5934 11.6409 16.0212 12.1444 15.4783 12.1444C14.9297 12.1444 14.3493 11.6173 14.3493 10.7877C14.3493 9.94885 14.9378 9.41192 15.4783 9.41192C16.0471 9.41192 16.6209 9.93851 16.6074 10.7755ZM8.49373 12.1444C7.94513 12.1444 7.36471 11.6173 7.36471 10.7877C7.36471 9.94885 7.95323 9.41192 8.49373 9.41192C9.06038 9.41192 9.63892 9.93712 9.6417 10.7815C9.62517 11.6239 9.05462 12.1444 8.49373 12.1444Z"
-          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
         />
       </svg>
     ),
   },
+  {
+    title: "RAG Search",
+    description:
+      "Upload documents and query them with semantic search powered by Vectorize.",
+    icon: (
+      <svg
+        className="h-5 w-5 text-warm-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Zm3.75 11.625a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "Edge-Native",
+    description:
+      "Runs globally on Cloudflare Workers with sub-100ms latency worldwide.",
+    icon: (
+      <svg
+        className="h-5 w-5 text-warm-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "E2E Tested",
+    description:
+      "Comprehensive Playwright tests with real services, no mocking required.",
+    icon: (
+      <svg
+        className="h-5 w-5 text-warm-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "Type-Safe",
+    description:
+      "Full TypeScript coverage with Drizzle ORM for type-safe database queries.",
+    icon: (
+      <svg
+        className="h-5 w-5 text-warm-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
+        />
+      </svg>
+    ),
+  },
+];
+
+const techStack = [
+  "React Router v7",
+  "Cloudflare Workers",
+  "Turso",
+  "Drizzle ORM",
+  "Better Auth",
+  "Workers AI",
+  "Vectorize",
+  "Tailwind CSS",
+  "Playwright",
 ];

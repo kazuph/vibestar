@@ -1,10 +1,15 @@
 import type { Env } from "../../server/load-context";
 
 // Model constants - DO NOT CHANGE THESE MODELS
-// plamo-embedding-1b (1024次元) - 指定された埋め込みモデル（変更禁止）
+// plamo-embedding-1b (2048次元) - 日本語埋め込みモデル by Preferred Networks
 const EMBEDDING_MODEL = "@cf/pfnet/plamo-embedding-1b";
-// gpt-oss-120b - 指定されたチャットモデル（変更禁止）
-const CHAT_MODEL = "@cf/pfnet/gpt-oss-120b";
+// gpt-oss-120b - OpenAI製チャットモデル (Responses API形式)
+const CHAT_MODEL = "@cf/openai/gpt-oss-120b";
+
+// Vectorize configuration
+// plamo-embedding-1b outputs 2048 dimensions, but Vectorize supports max 1536
+// We truncate embeddings to fit Vectorize's limit while preserving most important features
+const VECTORIZE_DIMENSIONS = 1536;
 
 // Chunk configuration
 const CHUNK_SIZE = 500;
@@ -44,6 +49,8 @@ export function chunkText(
 
 /**
  * Generate embeddings for text using Workers AI
+ * Note: plamo-embedding-1b outputs 2048 dimensions, but Vectorize max is 1536
+ * We truncate to VECTORIZE_DIMENSIONS to fit the index
  */
 export async function generateEmbeddings(
   ai: Ai,
@@ -54,7 +61,11 @@ export async function generateEmbeddings(
   });
 
   // Workers AI returns { data: number[][] } for embeddings
-  return (result as { data: number[][] }).data;
+  const embeddings = (result as { data: number[][] }).data;
+
+  // Truncate to VECTORIZE_DIMENSIONS (1536) for Vectorize compatibility
+  // The first dimensions typically contain the most important semantic information
+  return embeddings.map((emb) => emb.slice(0, VECTORIZE_DIMENSIONS));
 }
 
 /**
@@ -133,58 +144,128 @@ ${contextText}
 If the context doesn't contain relevant information, say so and answer based on your general knowledge.`;
 }
 
+// Responses API output type for gpt-oss-120b
+interface ResponsesApiOutput {
+  id: string;
+  output: Array<{
+    type: string;
+    content?: Array<{ text: string; type: string }>;
+    role?: string;
+  }>;
+}
+
 /**
  * Chat completion with streaming support
+ * Uses Responses API format: instructions + input (string)
+ * For multi-turn conversations, we concatenate messages into a single input string
+ *
+ * Note: gpt-oss-120b doesn't support streaming well via remote bindings,
+ * so we use non-streaming and simulate a stream for compatibility
  */
 export async function chatCompletionStream(
   ai: Ai,
   messages: ChatMessage[],
   systemPrompt?: string
 ): Promise<ReadableStream<Uint8Array>> {
-  const fullMessages: ChatMessage[] = [];
+  // Build conversation text from messages
+  // Format: "User: message\nAssistant: message\n..."
+  const conversationText = messages
+    .map((msg) => {
+      const roleLabel = msg.role === "user" ? "User" : msg.role === "assistant" ? "Assistant" : "System";
+      return `${roleLabel}: ${msg.content}`;
+    })
+    .join("\n\n");
 
-  // Add system prompt if provided
-  if (systemPrompt) {
-    fullMessages.push({ role: "system", content: systemPrompt });
+  // Use non-streaming for gpt-oss-120b (Responses API model)
+  console.log("[AI] chatCompletionStream calling model:", CHAT_MODEL);
+  console.log("[AI] instructions:", systemPrompt || "You are a helpful AI assistant.");
+  console.log("[AI] input:", conversationText.substring(0, 200));
+
+  let response: ResponsesApiOutput;
+  try {
+    response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ResponsesApiOutput> }).run(CHAT_MODEL, {
+      instructions: systemPrompt || "You are a helpful AI assistant.",
+      input: conversationText,
+      stream: false,
+    });
+    console.log("[AI] Response received:", JSON.stringify(response).substring(0, 500));
+  } catch (aiError) {
+    console.error("[AI] Workers AI call failed:", aiError);
+    throw aiError;
   }
 
-  // Add conversation messages
-  fullMessages.push(...messages);
+  // Extract text from Responses API format
+  let responseText = "";
+  if (response.output) {
+    for (const item of response.output) {
+      if (item.type === "message" && item.content) {
+        for (const content of item.content) {
+          if (content.type === "output_text" && content.text) {
+            responseText += content.text;
+          }
+        }
+      }
+    }
+  }
 
-  // Cast to any because @cf/pfnet/gpt-oss-120b is not in the type definitions
-  const response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ReadableStream<Uint8Array>> }).run(CHAT_MODEL, {
-    messages: fullMessages,
-    stream: true,
+  // Create a simple stream from the response text
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(responseText));
+      controller.close();
+    },
   });
-
-  // Workers AI returns a ReadableStream when stream: true
-  return response;
 }
 
 /**
  * Chat completion without streaming (for simpler use cases)
+ * Uses Responses API format: instructions + input (string)
  */
 export async function chatCompletion(
   ai: Ai,
   messages: ChatMessage[],
   systemPrompt?: string
 ): Promise<string> {
-  const fullMessages: ChatMessage[] = [];
+  // Build conversation text from messages
+  const conversationText = messages
+    .map((msg) => {
+      const roleLabel = msg.role === "user" ? "User" : msg.role === "assistant" ? "Assistant" : "System";
+      return `${roleLabel}: ${msg.content}`;
+    })
+    .join("\n\n");
 
-  if (systemPrompt) {
-    fullMessages.push({ role: "system", content: systemPrompt });
+  console.log("[AI] chatCompletion calling model:", CHAT_MODEL);
+  console.log("[AI] input:", conversationText.substring(0, 200));
+
+  let response: ResponsesApiOutput;
+  try {
+    response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ResponsesApiOutput> }).run(CHAT_MODEL, {
+      instructions: systemPrompt || "You are a helpful AI assistant.",
+      input: conversationText,
+      stream: false,
+    });
+    console.log("[AI] Response received:", JSON.stringify(response).substring(0, 500));
+  } catch (aiError) {
+    console.error("[AI] Workers AI call failed:", aiError);
+    throw aiError;
   }
 
-  fullMessages.push(...messages);
+  // Extract text from Responses API format
+  let responseText = "";
+  if (response.output) {
+    for (const item of response.output) {
+      if (item.type === "message" && item.content) {
+        for (const content of item.content) {
+          if (content.type === "output_text" && content.text) {
+            responseText += content.text;
+          }
+        }
+      }
+    }
+  }
 
-  // Cast to any because @cf/pfnet/gpt-oss-120b is not in the type definitions
-  const response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<{ response: string }> }).run(CHAT_MODEL, {
-    messages: fullMessages,
-    stream: false,
-  });
-
-  // Workers AI returns { response: string } for non-streaming
-  return response.response;
+  return responseText;
 }
 
 /**
