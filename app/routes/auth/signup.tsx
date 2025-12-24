@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import type { Route } from "./+types/auth.signup";
+import type { Route } from "./+types/signup";
 import { emailOtp } from "~/lib/auth.client";
 
 export const meta: Route.MetaFunction = () => {

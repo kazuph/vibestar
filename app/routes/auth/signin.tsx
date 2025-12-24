@@ -1,72 +1,25 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router";
-import type { Route } from "./+types/auth.verify-otp";
-import { signIn, emailOtp } from "~/lib/auth.client";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router";
+import type { Route } from "./+types/signin";
+import { emailOtp } from "~/lib/auth.client";
 
 export const meta: Route.MetaFunction = () => {
   return [
-    { title: "Verify Code - Vibestar" },
-    { name: "description", content: "Enter your verification code" },
+    { title: "Sign In - Vibestar" },
+    { name: "description", content: "Sign in to your Vibestar account" },
   ];
 };
 
-export default function VerifyOTP() {
+export default function SignIn() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const type = searchParams.get("type") || "signin";
-
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resendMessage, setResendMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Get email from sessionStorage
-    const storedEmail = sessionStorage.getItem("auth_email");
-    if (storedEmail) {
-      setEmail(storedEmail);
-    } else {
-      // Redirect to signup/signin if no email is stored
-      navigate(type === "signup" ? "/auth/signup" : "/auth/signin");
-    }
-  }, [navigate, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
-    try {
-      // Use signIn.emailOtp for sign-in OTP verification (creates session)
-      // NOT emailOtp.verifyEmail which is for email verification only
-      const result = await signIn.emailOtp({
-        email,
-        otp,
-      });
-
-      if (result.error) {
-        setError(result.error.message || "Invalid verification code");
-        return;
-      }
-
-      // Clear stored email
-      sessionStorage.removeItem("auth_email");
-
-      // Redirect to dashboard
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    setIsResending(true);
-    setError(null);
-    setResendMessage(null);
 
     try {
       const result = await emailOtp.sendVerificationOtp({
@@ -75,15 +28,17 @@ export default function VerifyOTP() {
       });
 
       if (result.error) {
-        setError(result.error.message || "Failed to resend code");
+        setError(result.error.message || "Failed to send verification code");
         return;
       }
 
-      setResendMessage("A new verification code has been sent to your email");
+      // Store email in sessionStorage for the OTP verification page
+      sessionStorage.setItem("auth_email", email);
+      navigate("/auth/verify-otp?type=signin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend code");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
-      setIsResending(false);
+      setIsLoading(false);
     }
   };
 
@@ -120,55 +75,43 @@ export default function VerifyOTP() {
         <div className="w-full max-w-sm">
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-warm-900">
-              Enter verification code
+              Welcome back
             </h1>
             <p className="mt-2 text-sm text-warm-600">
-              We sent a code to{" "}
-              <span className="font-medium text-warm-900">{email}</span>
+              We'll send you a verification code
             </p>
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-red-200 bg-red-50 p-4"
-              >
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                 <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            {resendMessage && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                <p className="text-sm text-green-700">{resendMessage}</p>
               </div>
             )}
 
             <div>
               <label
-                htmlFor="otp"
+                htmlFor="email"
                 className="block text-sm font-medium text-warm-700"
               >
-                Verification code
+                Email address
               </label>
               <input
-                id="otp"
-                name="otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
                 required
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                className="mt-2 block w-full rounded-lg border border-warm-300 bg-white px-4 py-4 text-center text-2xl tracking-widest text-warm-900 transition-colors focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20 sm:text-3xl"
-                placeholder="000000"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-2 block w-full rounded-lg border border-warm-300 bg-white px-4 py-3 text-warm-900 placeholder-warm-400 transition-colors focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20"
+                placeholder="you@example.com"
               />
             </div>
 
             <button
               type="submit"
-              disabled={isLoading || otp.length !== 6}
+              disabled={isLoading}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-4 py-3 text-base font-medium text-white transition-colors hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? (
@@ -192,32 +135,22 @@ export default function VerifyOTP() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Verifying...
+                  Sending code...
                 </>
               ) : (
-                "Verify and continue"
+                "Send verification code"
               )}
             </button>
 
-            <div className="space-y-3 text-center">
-              <button
-                type="button"
-                onClick={handleResendCode}
-                disabled={isResending}
-                className="text-sm font-medium text-accent-600 transition-colors hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-50"
+            <p className="text-center text-sm text-warm-600">
+              Don't have an account?{" "}
+              <Link
+                to="/auth/signup"
+                className="font-medium text-accent-600 hover:text-accent-700"
               >
-                {isResending ? "Sending..." : "Didn't receive a code? Resend"}
-              </button>
-
-              <p className="text-sm text-warm-600">
-                <Link
-                  to={type === "signup" ? "/auth/signup" : "/auth/signin"}
-                  className="font-medium text-warm-700 transition-colors hover:text-warm-900"
-                >
-                  Use a different email
-                </Link>
-              </p>
-            </div>
+                Sign up
+              </Link>
+            </p>
           </form>
         </div>
       </main>

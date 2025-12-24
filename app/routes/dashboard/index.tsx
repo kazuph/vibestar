@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { redirect, Link } from "react-router";
-import type { Route } from "./+types/dashboard._index";
+import type { Route } from "./+types/index";
 import { createAuth, type AuthEnv } from "~/lib/auth.server";
 import { createDb } from "~/lib/db/client";
 import { document } from "~/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { useSession, signOut } from "~/lib/auth.client";
 import { useNavigate } from "react-router";
-import { Chat } from "~/components/Chat";
-import { DocumentUpload } from "~/components/DocumentUpload";
-import { DocumentsList } from "~/components/DocumentsList";
-import type { Env } from "../../server/load-context";
+import { Chat } from "./+components/Chat";
+import { DocumentUpload } from "./+components/DocumentUpload";
+import { DocumentsList } from "./+components/DocumentsList";
+import type { Env } from "../../../server/load-context";
 
 type TabId = "account" | "chat" | "documents";
 

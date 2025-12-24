@@ -4,48 +4,25 @@ import { createRequestHandler, type ServerBuild } from "react-router";
 import * as build from "../build/server";
 import { getLoadContext, type Env } from "./load-context";
 
+// API routes
+import health from "./api/health";
+import auth from "./api/auth";
+import chat from "./api/chat";
+import documents from "./api/documents";
+
 const app = new Hono<{ Bindings: Env }>();
 
-// Global middleware can be added here
-// Example: app.use("*", cors());
-// Example: app.use("*", basicAuth({ ... }));
+// ============================================
+// API Routes - mounted before React Router
+// ============================================
+app.route("/api/health", health);
+app.route("/api/auth", auth);
+app.route("/api/chat", chat);
+app.route("/api/documents", documents);
 
-// Health check endpoint with AI binding diagnostics
-app.get("/api/health", (c) => {
-  const env = c.env;
-
-  // Check AI binding status
-  const aiBinding = env.AI;
-  const aiStatus = {
-    exists: !!aiBinding,
-    hasRunMethod: !!(aiBinding && typeof (aiBinding as any).run === "function"),
-  };
-
-  // Check Vectorize binding status
-  const vectorBinding = env.VECTOR_INDEX;
-  const vectorStatus = {
-    exists: !!vectorBinding,
-    hasQueryMethod: !!(
-      vectorBinding && typeof (vectorBinding as any).query === "function"
-    ),
-  };
-
-  return c.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    bindings: {
-      ai: aiStatus,
-      vectorize: vectorStatus,
-    },
-  });
-});
-
-// Example API routes can be added here
-// app.get("/api/users", async (c) => {
-//   return c.json({ users: [] });
-// });
-
+// ============================================
 // React Router handler - catches all other routes
+// ============================================
 app.all("*", async (c) => {
   const requestHandler = createRequestHandler(build as unknown as ServerBuild);
 
