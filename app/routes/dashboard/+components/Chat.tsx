@@ -8,15 +8,15 @@ interface Message {
 
 interface ChatProps {
   conversationId?: string;
-  useRag?: boolean;
+  projectId?: string | null;  // When specified, RAG is automatically enabled
+  projectName?: string | null;  // Name of the selected project
 }
 
-export function Chat({ conversationId: initialConversationId, useRag = false }: ChatProps) {
+export function Chat({ conversationId: initialConversationId, projectId, projectName }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(initialConversationId);
-  const [enableRag, setEnableRag] = useState(useRag);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -34,6 +34,12 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
       loadMessages(initialConversationId);
     }
   }, [initialConversationId]);
+
+  // Clear messages when projectId changes
+  useEffect(() => {
+    setMessages([]);
+    setConversationId(undefined);
+  }, [projectId]);
 
   async function loadMessages(convId: string) {
     try {
@@ -71,14 +77,24 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
     abortControllerRef.current = new AbortController();
 
     try {
+      const requestBody: {
+        message: string;
+        conversationId?: string;
+        projectId?: string;
+      } = {
+        message: userMessage.content,
+        conversationId,
+      };
+
+      // Add projectId if specified (automatically enables RAG)
+      if (projectId) {
+        requestBody.projectId = projectId;
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage.content,
-          conversationId,
-          useRag: enableRag,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
       });
 
@@ -161,15 +177,20 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
       <div className="flex items-center justify-between border-b border-warm-200 px-4 py-3">
         <h3 className="font-medium text-warm-900">AI Chat</h3>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-warm-600">
-            <input
-              type="checkbox"
-              checked={enableRag}
-              onChange={(e) => setEnableRag(e.target.checked)}
-              className="rounded border-warm-300 text-accent-600 focus:ring-accent-500"
-            />
-            Use documents (RAG)
-          </label>
+          {projectId ? (
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700">
+                {projectName || "Project"}
+              </span>
+              <span className="rounded-full bg-green-100 px-3 py-1 text-sm text-green-700">
+                RAG Enabled
+              </span>
+            </div>
+          ) : (
+            <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+              No Project
+            </span>
+          )}
           <button
             onClick={handleNewChat}
             className="rounded-lg border border-warm-300 bg-white px-3 py-1 text-sm text-warm-700 transition-colors hover:bg-warm-50"
@@ -183,7 +204,7 @@ export function Chat({ conversationId: initialConversationId, useRag = false }: 
       <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-warm-400">
-            Start a conversation
+            {projectId ? "Start a conversation with RAG context" : "Start a conversation"}
           </div>
         ) : (
           <div className="space-y-4">

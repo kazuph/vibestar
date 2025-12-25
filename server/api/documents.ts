@@ -1,13 +1,15 @@
 import { Hono } from "hono";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import type { Env } from "../load-context";
 import { createAuth, type AuthEnv } from "../../app/lib/auth.server";
 import { createDb } from "../../app/lib/db/client";
 import {
   document,
   documentChunk,
+  project,
   type NewDocument,
   type NewDocumentChunk,
+  type NewProject,
 } from "../../app/lib/db/schema";
 import {
   processDocument,
@@ -16,7 +18,7 @@ import {
 
 const documents = new Hono<{ Bindings: Env }>();
 
-// GET /api/documents - List user's documents
+// GET /api/documents - List user's documents (optionally filtered by projectId)
 documents.get("/", async (c) => {
   const env = c.env;
 
@@ -30,6 +32,7 @@ documents.get("/", async (c) => {
 
   const userId = sessionData.session.userId;
   const documentId = c.req.query("id");
+  const projectId = c.req.query("projectId");
 
   const db = createDb(env);
 
@@ -47,10 +50,17 @@ documents.get("/", async (c) => {
     return c.json({ document: doc[0] });
   }
 
-  // List all documents
+  // Build where conditions
+  const conditions = [eq(document.userId, userId)];
+  if (projectId) {
+    conditions.push(eq(document.projectId, projectId));
+  }
+
+  // List documents (filtered by projectId if provided)
   const docs = await db
     .select({
       id: document.id,
+      projectId: document.projectId,
       title: document.title,
       mimeType: document.mimeType,
       status: document.status,
@@ -58,13 +68,14 @@ documents.get("/", async (c) => {
       updatedAt: document.updatedAt,
     })
     .from(document)
-    .where(eq(document.userId, userId))
+    .where(and(...conditions))
     .orderBy(desc(document.createdAt));
 
   return c.json({ documents: docs });
 });
 
 // POST /api/documents - Upload a new document for RAG
+// Requires projectId (will use default project if not specified)
 documents.post("/", async (c) => {
   const env = c.env;
 
@@ -82,6 +93,7 @@ documents.post("/", async (c) => {
   let title: string;
   let content: string;
   let mimeType: string;
+  let projectId: string | undefined;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData();
@@ -94,8 +106,9 @@ documents.post("/", async (c) => {
     title = formData.get("title")?.toString() || file.name;
     content = await file.text();
     mimeType = file.type || "text/plain";
+    projectId = formData.get("projectId")?.toString();
   } else {
-    let body: { title: string; content: string; mimeType?: string };
+    let body: { title: string; content: string; mimeType?: string; projectId?: string };
 
     try {
       body = await c.req.json();
@@ -110,13 +123,50 @@ documents.post("/", async (c) => {
     title = body.title;
     content = body.content;
     mimeType = body.mimeType || "text/plain";
+    projectId = body.projectId;
   }
 
   const db = createDb(env);
 
+  // If no projectId, get or create default project
+  if (!projectId) {
+    const defaultProject = await db
+      .select()
+      .from(project)
+      .where(and(eq(project.userId, userId), eq(project.isDefault, true)))
+      .limit(1);
+
+    if (defaultProject.length > 0) {
+      projectId = defaultProject[0].id;
+    } else {
+      // Create default project
+      const newDefaultProject: NewProject = {
+        id: crypto.randomUUID(),
+        userId,
+        name: "Uncategorized",
+        description: "Default project for documents without a project",
+        isDefault: true,
+      };
+      await db.insert(project).values(newDefaultProject);
+      projectId = newDefaultProject.id;
+    }
+  } else {
+    // Verify project exists and belongs to user
+    const existingProject = await db
+      .select()
+      .from(project)
+      .where(and(eq(project.id, projectId), eq(project.userId, userId)))
+      .limit(1);
+
+    if (existingProject.length === 0) {
+      return c.json({ error: "Project not found" }, 404);
+    }
+  }
+
   const newDocument: NewDocument = {
     id: crypto.randomUUID(),
     userId,
+    projectId,
     title,
     content,
     mimeType,
@@ -126,13 +176,15 @@ documents.post("/", async (c) => {
   await db.insert(document).values(newDocument);
 
   // Process document in background using waitUntil
+  const docProjectId = projectId; // Capture for closure
   c.executionCtx.waitUntil(
     (async () => {
       try {
         const { chunkIds, vectorIds } = await processDocument(
           env,
           newDocument.id,
-          content
+          content,
+          docProjectId
         );
 
         const chunks: NewDocumentChunk[] = chunkIds.map((chunkId, index) => ({
@@ -170,6 +222,7 @@ documents.post("/", async (c) => {
   return c.json(
     {
       id: newDocument.id,
+      projectId: docProjectId,
       status: "processing",
       message: "Document uploaded and processing started",
     },

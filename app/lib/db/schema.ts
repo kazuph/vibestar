@@ -87,14 +87,38 @@ export const verification = sqliteTable("verification", {
 });
 
 /**
+ * Project table for organizing documents and RAG contexts
+ * Each project contains documents and can be selected for chat with auto-RAG
+ */
+export const project = sqliteTable("project", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  isDefault: integer("isDefault", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("createdAt", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updatedAt", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+/**
  * Document table for RAG
  * Stores uploaded document metadata
+ * Each document belongs to exactly one project
  */
 export const document = sqliteTable("document", {
   id: text("id").primaryKey(),
   userId: text("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  projectId: text("projectId").references(() => project.id, {
+    onDelete: "set null",
+  }),
   title: text("title").notNull(),
   content: text("content").notNull(),
   mimeType: text("mimeType").notNull(),
@@ -128,12 +152,16 @@ export const documentChunk = sqliteTable("documentChunk", {
 
 /**
  * Conversation table for AI chat
+ * When projectId is set, RAG is automatically enabled for that project's documents
  */
 export const conversation = sqliteTable("conversation", {
   id: text("id").primaryKey(),
   userId: text("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  projectId: text("projectId").references(() => project.id, {
+    onDelete: "set null",
+  }),
   title: text("title"),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
@@ -167,6 +195,8 @@ export type Account = typeof account.$inferSelect;
 export type NewAccount = typeof account.$inferInsert;
 export type Verification = typeof verification.$inferSelect;
 export type NewVerification = typeof verification.$inferInsert;
+export type Project = typeof project.$inferSelect;
+export type NewProject = typeof project.$inferInsert;
 export type Document = typeof document.$inferSelect;
 export type NewDocument = typeof document.$inferInsert;
 export type DocumentChunk = typeof documentChunk.$inferSelect;

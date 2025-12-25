@@ -86,31 +86,42 @@ export async function storeVectors(
 
 /**
  * Query Vectorize for similar documents
+ * When projectId is provided, only search within that project's documents
  */
 export async function queryVectors(
   vectorIndex: VectorizeIndex,
   queryVector: number[],
-  topK = 5
+  topK = 5,
+  projectId?: string
 ): Promise<VectorizeMatches> {
-  return await vectorIndex.query(queryVector, {
+  const queryOptions: { topK: number; returnMetadata: "all"; filter?: Record<string, string> } = {
     topK,
     returnMetadata: "all",
-  });
+  };
+
+  // Filter by projectId if provided
+  if (projectId) {
+    queryOptions.filter = { projectId };
+  }
+
+  return await vectorIndex.query(queryVector, queryOptions);
 }
 
 /**
  * Perform RAG query: embed query, search vectors, return contexts
+ * When projectId is provided, only search within that project's documents
  */
 export async function performRagQuery(
   env: Env,
   query: string,
+  projectId: string,
   topK = 5
 ): Promise<RagContext[]> {
   // Generate embedding for query
   const [queryEmbedding] = await generateEmbeddings(env.AI, [query]);
 
-  // Search for similar vectors
-  const matches = await queryVectors(env.VECTOR_INDEX, queryEmbedding, topK);
+  // Search for similar vectors (filtered by projectId)
+  const matches = await queryVectors(env.VECTOR_INDEX, queryEmbedding, topK, projectId);
 
   // Map results to context
   return matches.matches.map((match) => ({
@@ -271,11 +282,13 @@ export async function chatCompletion(
 /**
  * Process document: chunk, embed, and store vectors
  * This should be called with waitUntil for background processing
+ * projectId is stored in metadata for filtered RAG queries
  */
 export async function processDocument(
   env: Env,
   documentId: string,
-  content: string
+  content: string,
+  projectId: string
 ): Promise<{ chunkIds: string[]; vectorIds: string[] }> {
   const chunks = chunkText(content);
   const embeddings = await generateEmbeddings(env.AI, chunks);
@@ -300,6 +313,7 @@ export async function processDocument(
       values: embeddings[i],
       metadata: {
         documentId,
+        projectId,
         chunkIndex: String(i),
         content: chunks[i],
       },

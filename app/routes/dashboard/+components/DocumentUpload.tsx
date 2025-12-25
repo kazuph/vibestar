@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 
 interface DocumentUploadProps {
+  projectId?: string | null;
   onUploadComplete?: (documentId: string) => void;
 }
 
-export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
+export function DocumentUpload({ projectId, onUploadComplete }: DocumentUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,9 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("title", file.name);
+      if (projectId) {
+        formData.append("projectId", projectId);
+      }
 
       const response = await fetch("/api/documents", {
         method: "POST",
@@ -67,7 +71,12 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
         credentials: "include",
       });
 
-      const data = (await response.json()) as { id?: string; error?: string };
+      let data: { id?: string; error?: string };
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(`Server error (${response.status})`);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Upload failed");

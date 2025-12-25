@@ -44,7 +44,7 @@ test.describe("AI機能動作証拠取得", () => {
     await clearMailbox();
   });
 
-  test("AIチャットが実際にAIレスポンスを返す証拠", async ({ page }) => {
+  test("AIチャットが実際にAIレスポンスを返す証拠（プロジェクト未選択）", async ({ page }) => {
     // ログイン
     await loginUser(page);
     await page.screenshot({
@@ -56,8 +56,11 @@ test.describe("AI機能動作証拠取得", () => {
     const chatTab = page.locator('button:has-text("AI Chat")');
     await chatTab.click();
     await expect(page.locator("h3:has-text('AI Chat')")).toBeVisible();
+
+    // プロジェクト未選択状態を確認
+    await expect(page.locator("text=No Project")).toBeVisible();
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "02-ai-chat-tab-initial.png"),
+      path: path.join(EVIDENCE_DIR, "images", "02-ai-chat-tab-no-project.png"),
       fullPage: true
     });
 
@@ -96,29 +99,46 @@ test.describe("AI機能動作証拠取得", () => {
     const responseText = await assistantMessage.textContent();
     console.log("AI Response:", responseText);
 
-    // 実際のAIレスポンスであることを確認（プレースホルダーではない）
+    // 実際のAIレスポンスであることを確認
     expect(responseText).toBeTruthy();
-    // AIは簡潔に「4」と回答することもあるため、最低1文字以上であればOK
     expect(responseText!.length).toBeGreaterThan(0);
     expect(responseText).not.toContain("ローカル開発モード");
     expect(responseText).not.toContain("Workers AIはローカルでは利用できない");
   });
 
-  test("RAGチェックボックス有効でAIが応答する証拠", async ({ page }) => {
+  test("プロジェクト選択でRAG有効化の証拠", async ({ page }) => {
     // ログイン
     await loginUser(page);
+
+    // Projectsタブに移動
+    const projectsTab = page.locator('button:has-text("Projects")');
+    await projectsTab.click();
+    await expect(page.locator("h3:has-text('Projects')")).toBeVisible();
+
+    // プロジェクトを作成
+    await page.fill('input[placeholder="Project name"]', 'Evidence Test Project');
+    await page.click('button:has-text("Create Project")');
+
+    // プロジェクトが作成されるまで待つ
+    await expect(page.locator("text=Evidence Test Project")).toBeVisible({ timeout: 10000 });
+
+    // プロジェクトを選択
+    await page.click('text=Evidence Test Project');
+    await expect(page.locator("text=Selected")).toBeVisible();
+    await page.screenshot({
+      path: path.join(EVIDENCE_DIR, "images", "06-project-selected.png"),
+      fullPage: true
+    });
 
     // AI Chatタブに移動
     const chatTab = page.locator('button:has-text("AI Chat")');
     await chatTab.click();
     await expect(page.locator("h3:has-text('AI Chat')")).toBeVisible();
 
-    // RAGチェックボックスを有効化
-    const ragCheckbox = page.locator('input[type="checkbox"]');
-    await ragCheckbox.click();
-    await expect(ragCheckbox).toBeChecked();
+    // RAG有効を確認
+    await expect(page.locator("text=RAG Enabled")).toBeVisible();
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "06-rag-enabled.png"),
+      path: path.join(EVIDENCE_DIR, "images", "07-rag-enabled-via-project.png"),
       fullPage: true
     });
 
@@ -137,7 +157,7 @@ test.describe("AI機能動作証拠取得", () => {
     await page.waitForTimeout(3000);
 
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "07-rag-ai-response.png"),
+      path: path.join(EVIDENCE_DIR, "images", "08-rag-ai-response.png"),
       fullPage: true
     });
 
@@ -153,12 +173,25 @@ test.describe("AI機能動作証拠取得", () => {
     // ログイン
     await loginUser(page);
 
+    // Projectsタブに移動してプロジェクト作成
+    const projectsTab = page.locator('button:has-text("Projects")');
+    await projectsTab.click();
+    await expect(page.locator("h3:has-text('Projects')")).toBeVisible();
+
+    await page.fill('input[placeholder="Project name"]', 'Doc Upload Test');
+    await page.click('button:has-text("Create Project")');
+    await expect(page.locator("text=Doc Upload Test")).toBeVisible({ timeout: 10000 });
+
+    // プロジェクトを選択
+    await page.click('text=Doc Upload Test');
+    await expect(page.locator("text=Selected")).toBeVisible();
+
     // Documentsタブに移動
     const documentsTab = page.locator('button:has-text("Documents")');
     await documentsTab.click();
     await expect(page.locator("text=Document Management")).toBeVisible();
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "08-documents-tab.png"),
+      path: path.join(EVIDENCE_DIR, "images", "09-documents-tab.png"),
       fullPage: true
     });
 
@@ -191,17 +224,16 @@ Created at: ${new Date().toISOString()}
     // アップロード完了を待つ
     await page.waitForTimeout(3000);
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "09-document-uploaded.png"),
+      path: path.join(EVIDENCE_DIR, "images", "10-document-uploaded.png"),
       fullPage: true
     });
 
     // ドキュメント処理完了を待つ（最大30秒）
     try {
       await expect(
-        page.locator("text=ready").or(page.locator("text=processing"))
+        page.locator("text=Ready").or(page.locator("text=Processing"))
       ).toBeVisible({ timeout: 30000 });
     } catch {
-      // 処理中でもテストを続行
       console.log("Document status check skipped");
     }
 
@@ -210,12 +242,10 @@ Created at: ${new Date().toISOString()}
     await chatTab.click();
     await expect(page.locator("h3:has-text('AI Chat')")).toBeVisible();
 
-    // RAGを有効化
-    const ragCheckbox = page.locator('input[type="checkbox"]');
-    await ragCheckbox.click();
-    await expect(ragCheckbox).toBeChecked();
+    // RAG有効を確認（プロジェクト選択済み）
+    await expect(page.locator("text=RAG Enabled")).toBeVisible();
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "10-rag-enabled-for-query.png"),
+      path: path.join(EVIDENCE_DIR, "images", "11-rag-enabled-for-query.png"),
       fullPage: true
     });
 
@@ -234,7 +264,7 @@ Created at: ${new Date().toISOString()}
     await page.waitForTimeout(5000);
 
     await page.screenshot({
-      path: path.join(EVIDENCE_DIR, "images", "11-rag-query-response.png"),
+      path: path.join(EVIDENCE_DIR, "images", "12-rag-query-response.png"),
       fullPage: true
     });
 

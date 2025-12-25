@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 interface Document {
   id: string;
+  projectId?: string | null;
   title: string;
   mimeType: string;
   status: "processing" | "ready" | "failed";
@@ -10,11 +11,12 @@ interface Document {
 }
 
 interface DocumentsListProps {
+  projectId?: string | null;
   refreshTrigger?: number;
   initialDocuments?: Document[];
 }
 
-export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsListProps) {
+export function DocumentsList({ projectId, refreshTrigger, initialDocuments }: DocumentsListProps) {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments || []);
   const [isLoading, setIsLoading] = useState(!initialDocuments);
   const [error, setError] = useState<string | null>(null);
@@ -23,14 +25,21 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
   const loadDocuments = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/documents", {
+      const url = projectId
+        ? `/api/documents?projectId=${projectId}`
+        : "/api/documents";
+      const response = await fetch(url, {
         credentials: "include",
       });
 
       if (!response.ok) {
         // If fetch fails but we have initial data, just use that
         if (initialDocuments && initialDocuments.length > 0) {
-          setDocuments(initialDocuments);
+          // Filter initial documents by projectId if specified
+          const filtered = projectId
+            ? initialDocuments.filter((d) => d.projectId === projectId)
+            : initialDocuments;
+          setDocuments(filtered);
           setError(null);
           return;
         }
@@ -43,7 +52,11 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
     } catch (err) {
       // If we have initial documents, use them silently
       if (initialDocuments) {
-        setDocuments(initialDocuments);
+        // Filter initial documents by projectId if specified
+        const filtered = projectId
+          ? initialDocuments.filter((d) => d.projectId === projectId)
+          : initialDocuments;
+        setDocuments(filtered);
         setError(null);
       } else {
         setError((err as Error).message);
@@ -51,14 +64,12 @@ export function DocumentsList({ refreshTrigger, initialDocuments }: DocumentsLis
     } finally {
       setIsLoading(false);
     }
-  }, [initialDocuments]);
+  }, [initialDocuments, projectId]);
 
-  // Only fetch on mount if no initial data provided
+  // Fetch on mount or when projectId changes
   useEffect(() => {
-    if (!initialDocuments) {
-      loadDocuments();
-    }
-  }, [initialDocuments, loadDocuments]);
+    loadDocuments();
+  }, [loadDocuments]);
 
   // Reload when refreshTrigger changes (after upload)
   useEffect(() => {

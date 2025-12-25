@@ -10,9 +10,10 @@ import { useNavigate } from "react-router";
 import { Chat } from "./+components/Chat";
 import { DocumentUpload } from "./+components/DocumentUpload";
 import { DocumentsList } from "./+components/DocumentsList";
+import { ProjectsList } from "./+components/ProjectsList";
 import type { Env } from "../../../server/load-context";
 
-type TabId = "account" | "chat" | "documents";
+type TabId = "account" | "chat" | "documents" | "projects";
 
 export const meta: Route.MetaFunction = () => {
   return [
@@ -85,6 +86,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 const tabs: { id: TabId; label: string }[] = [
   { id: "account", label: "Account" },
+  { id: "projects", label: "Projects" },
   { id: "chat", label: "AI Chat" },
   { id: "documents", label: "Documents" },
 ];
@@ -94,6 +96,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<TabId>("account");
   const [documentRefreshTrigger, setDocumentRefreshTrigger] = useState(0);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null);
+
+  const handleProjectSelect = (projectId: string | null, projectName: string | null) => {
+    setSelectedProjectId(projectId);
+    setSelectedProjectName(projectName);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -215,15 +224,31 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
+        {/* Projects Tab */}
+        {activeTab === "projects" && (
+          <div className="rounded-lg border border-warm-200 bg-white p-6">
+            <ProjectsList
+              selectedProjectId={selectedProjectId}
+              onProjectSelect={handleProjectSelect}
+            />
+          </div>
+        )}
+
         {/* Chat Tab */}
         {activeTab === "chat" && (
           <div className="space-y-6">
             <div className="rounded-lg border border-warm-200 bg-white p-6">
               <h2 className="mb-4 text-lg font-semibold text-warm-900">AI Chat</h2>
-              <p className="mb-6 text-sm text-warm-600">
-                Chat with AI. Enable RAG to use your uploaded documents as context.
-              </p>
-              <Chat useRag={false} />
+              {selectedProjectId ? (
+                <p className="mb-6 text-sm text-warm-600">
+                  Chatting with project context. RAG is automatically enabled.
+                </p>
+              ) : (
+                <p className="mb-6 text-sm text-warm-600">
+                  No project selected. Go to the Projects tab to select a project for RAG-enabled chat.
+                </p>
+              )}
+              <Chat projectId={selectedProjectId} projectName={selectedProjectName} />
             </div>
           </div>
         )}
@@ -235,20 +260,31 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
               <h2 className="mb-4 text-lg font-semibold text-warm-900">
                 Document Management
               </h2>
-              <p className="mb-6 text-sm text-warm-600">
-                Upload documents to use with RAG. Supported formats: TXT, MD, JSON, CSV.
-              </p>
-              <DocumentUpload onUploadComplete={handleDocumentUploaded} />
+              {selectedProjectId ? (
+                <p className="mb-6 text-sm text-warm-600">
+                  Upload documents to the selected project. They will be used for RAG when chatting with this project.
+                </p>
+              ) : (
+                <p className="mb-6 text-sm text-warm-600">
+                  No project selected. Documents will be uploaded to the default "Uncategorized" project.
+                  Go to the Projects tab to select or create a project.
+                </p>
+              )}
+              <DocumentUpload
+                projectId={selectedProjectId}
+                onUploadComplete={handleDocumentUploaded}
+              />
             </div>
 
             <div className="rounded-lg border border-warm-200 bg-white p-6">
               <h2 className="mb-4 text-lg font-semibold text-warm-900">
-                Uploaded Documents
+                {selectedProjectId ? "Project Documents" : "All Documents"}
               </h2>
               <DocumentsList
-                  refreshTrigger={documentRefreshTrigger}
-                  initialDocuments={loaderData.documents}
-                />
+                projectId={selectedProjectId}
+                refreshTrigger={documentRefreshTrigger}
+                initialDocuments={loaderData.documents}
+              />
             </div>
           </div>
         )}

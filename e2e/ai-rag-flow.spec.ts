@@ -5,10 +5,9 @@ import * as fs from "fs";
 import { clearMailbox, getOtpFromMailpit, waitForMailpit } from "./utils/mailpit";
 
 /**
- * RAG Flow E2E Test - ドキュメントアップロード → チャットでRAG使用
+ * RAG Flow E2E Test - プロジェクト作成 → ドキュメントアップロード → プロジェクト選択してチャット
  *
- * Note: リモートAIバインディングにより、ローカル開発環境でも
- * 実際のWorkers AIが動作します。
+ * Note: プロジェクトベースのRAG管理により、プロジェクトを選択すると自動でRAGが有効化されます。
  */
 
 // Create a test file for upload
@@ -51,7 +50,7 @@ test.describe.serial("RAG Flow E2E", () => {
     await clearMailbox();
   });
 
-  test("complete RAG flow: upload document and use in chat", async ({ page }) => {
+  test("complete RAG flow: create project, upload document, chat with RAG", async ({ page }) => {
     // Create test document
     const testContent = `
 Vibestar Project Information
@@ -74,46 +73,59 @@ This is a test document for RAG demonstration.
     // Step 1: Login
     await loginUser(page);
 
-    // Step 2: Navigate to Documents tab
+    // Step 2: Navigate to Projects tab
+    const projectsTab = page.locator('button:has-text("Projects")');
+    await projectsTab.click();
+    await expect(page.locator("h3:has-text('Projects')")).toBeVisible();
+
+    // Step 3: Create a new project
+    await page.fill('input[placeholder="Project name"]', 'RAG Test Project');
+    await page.fill('input[placeholder="Description (optional)"]', 'Test project for RAG');
+    await page.click('button:has-text("Create Project")');
+
+    // Wait for project to be created
+    await expect(page.locator("text=RAG Test Project")).toBeVisible({ timeout: 10000 });
+
+    // Step 4: Select the project
+    await page.click('text=RAG Test Project');
+    await expect(page.locator("span:has-text('Selected')")).toBeVisible();
+
+    // Small pause for visibility
+    await page.waitForTimeout(500);
+
+    // Step 5: Navigate to Documents tab
     const documentsTab = page.locator('button:has-text("Documents")');
     await documentsTab.click();
     await expect(page.locator("text=Document Management")).toBeVisible();
 
-    // Step 3: Upload document
+    // Step 6: Upload document
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(testFilePath);
 
     // Wait for upload success message - accept any processing state
-    // Note: With remote AI binding, embedding can take time or fail
-    // Use .first() to avoid strict mode violation when multiple elements match
     await expect(
       page.locator("text=uploaded successfully")
         .or(page.locator("text=Processing"))
         .or(page.locator("text=Ready"))
-        .or(page.locator("text=Failed")) // Embedding failure is still a valid upload
+        .or(page.locator("text=Failed"))
         .first()
     ).toBeVisible({ timeout: 15000 });
 
-    // Wait for document processing to settle (longer timeout for remote AI)
+    // Wait for document processing to settle
     await page.waitForTimeout(5000);
 
-    // Small pause for video visibility
-    await page.waitForTimeout(1000);
-
-    // Step 4: Navigate to AI Chat tab
+    // Step 7: Navigate to AI Chat tab
     const chatTab = page.locator('button:has-text("AI Chat")');
     await chatTab.click();
     await expect(page.locator("h3:has-text('AI Chat')")).toBeVisible();
 
-    // Step 5: Enable RAG (Use documents checkbox)
-    const ragCheckbox = page.locator('input[type="checkbox"]');
-    await ragCheckbox.click();
-    await expect(ragCheckbox).toBeChecked();
+    // Step 8: Verify RAG is automatically enabled (project selected)
+    await expect(page.locator("text=RAG Enabled")).toBeVisible();
 
     // Small pause to show RAG is enabled
     await page.waitForTimeout(500);
 
-    // Step 6: Send a chat message that would use RAG
+    // Step 9: Send a chat message that would use RAG
     const input = page.locator('input[placeholder*="message"]');
     await input.fill("What is Vibestar?");
 
@@ -121,17 +133,17 @@ This is a test document for RAG demonstration.
     await expect(sendButton).toBeEnabled();
     await sendButton.click();
 
-    // Step 7: Wait for user message to appear
+    // Step 10: Wait for user message to appear
     await expect(
       page.locator("text=What is Vibestar?")
     ).toBeVisible({ timeout: 5000 });
 
-    // Step 8: Wait for AI response (real AI response with remote binding)
+    // Step 11: Wait for AI response
     await expect(
       page.locator('[data-role="assistant"]').first()
     ).toBeVisible({ timeout: 30000 });
 
-    // Verify assistant response appeared (AI may return temporary errors, which is acceptable)
+    // Verify assistant response appeared
     const assistantResponse = await page.locator('[data-role="assistant"]').first().textContent();
     console.log("Assistant response:", assistantResponse);
     expect(assistantResponse).toBeTruthy();
@@ -140,8 +152,8 @@ This is a test document for RAG demonstration.
     await page.waitForTimeout(1000);
   });
 
-  test("document upload and list display", async ({ page }) => {
-    // Create multiple test files
+  test("document upload to default project", async ({ page }) => {
+    // Create test files
     const testFiles = [
       { name: "project-overview.md", content: "# Vibestar\n\nModern fullstack template." },
       { name: "api-docs.json", content: '{"name": "vibestar", "version": "1.0.0"}' },
@@ -161,10 +173,13 @@ This is a test document for RAG demonstration.
     // Login
     await loginUser(page);
 
-    // Navigate to Documents tab
+    // Navigate to Documents tab (without selecting a project)
     const documentsTab = page.locator('button:has-text("Documents")');
     await documentsTab.click();
     await expect(page.locator("text=Document Management")).toBeVisible();
+
+    // Verify message about default project
+    await expect(page.locator("text=Uncategorized")).toBeVisible({ timeout: 5000 });
 
     // Upload first document
     const fileInput = page.locator('input[type="file"]');
@@ -179,10 +194,39 @@ This is a test document for RAG demonstration.
     // Wait for upload
     await page.waitForTimeout(2000);
 
-    // Check documents list section is visible
-    await expect(page.locator("text=Uploaded Documents")).toBeVisible();
-
     // Final pause for video
+    await page.waitForTimeout(1000);
+  });
+
+  test("chat without project has no RAG", async ({ page }) => {
+    // Login
+    await loginUser(page);
+
+    // Navigate to AI Chat directly (no project selected)
+    const chatTab = page.locator('button:has-text("AI Chat")');
+    await chatTab.click();
+    await expect(page.locator("h3:has-text('AI Chat')")).toBeVisible();
+
+    // Verify RAG is not enabled (no project)
+    await expect(page.locator("span:has-text('No Project')")).toBeVisible();
+
+    // Send a message
+    const input = page.locator('input[placeholder*="message"]');
+    await input.fill("Hello! What is 2 + 2?");
+
+    const sendButton = page.locator('button:has-text("Send")');
+    await sendButton.click();
+
+    // Wait for AI response
+    await expect(
+      page.locator('[data-role="assistant"]').first()
+    ).toBeVisible({ timeout: 30000 });
+
+    // Verify response
+    const assistantResponse = await page.locator('[data-role="assistant"]').first().textContent();
+    expect(assistantResponse).toBeTruthy();
+
+    // Final pause
     await page.waitForTimeout(1000);
   });
 });

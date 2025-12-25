@@ -9,8 +9,20 @@ import health from "./api/health";
 import auth from "./api/auth";
 import chat from "./api/chat";
 import documents from "./api/documents";
+import projects from "./api/projects";
 
 const app = new Hono<{ Bindings: Env }>();
+
+// ============================================
+// Global error handler for API routes
+// ============================================
+app.onError((err, c) => {
+  console.error("API Error:", err);
+  return c.json(
+    { error: err.message || "Internal Server Error" },
+    500
+  );
+});
 
 // ============================================
 // API Routes - mounted before React Router
@@ -19,6 +31,7 @@ app.route("/api/health", health);
 app.route("/api/auth", auth);
 app.route("/api/chat", chat);
 app.route("/api/documents", documents);
+app.route("/api/projects", projects);
 
 // ============================================
 // React Router handler - catches all other routes

@@ -84,7 +84,7 @@ chat.post("/", async (c) => {
   let body: {
     message: string;
     conversationId?: string;
-    useRag?: boolean;
+    projectId?: string;  // When specified, RAG is automatically enabled
   };
 
   try {
@@ -101,16 +101,31 @@ chat.post("/", async (c) => {
 
   // Get or create conversation
   let conversationId = body.conversationId;
+  let projectId = body.projectId;
 
   if (!conversationId) {
     const newConversation: NewConversation = {
       id: crypto.randomUUID(),
       userId,
+      projectId: projectId || null,
       title: body.message.slice(0, 50),
     };
 
     await db.insert(conversation).values(newConversation);
     conversationId = newConversation.id;
+  } else {
+    // Get projectId from existing conversation if not provided
+    if (!projectId) {
+      const existingConv = await db
+        .select({ projectId: conversation.projectId })
+        .from(conversation)
+        .where(eq(conversation.id, conversationId))
+        .limit(1);
+
+      if (existingConv.length > 0 && existingConv[0].projectId) {
+        projectId = existingConv[0].projectId;
+      }
+    }
   }
 
   // Get previous messages for context
@@ -140,13 +155,14 @@ chat.post("/", async (c) => {
   };
   await db.insert(message).values(userMessage);
 
-  // Perform RAG if enabled
+  // Perform RAG if projectId is specified
   let systemPrompt = "You are a helpful AI assistant.";
 
-  if (body.useRag) {
+  if (projectId) {
     try {
-      const contexts = await performRagQuery(env, body.message, 3);
+      const contexts = await performRagQuery(env, body.message, projectId, 3);
       systemPrompt = buildSystemPromptWithContext(contexts);
+      console.log(`RAG enabled for project ${projectId}, found ${contexts.length} contexts`);
     } catch (error) {
       console.error("RAG query failed:", error);
     }
