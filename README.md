@@ -225,36 +225,100 @@ The AI chat uses streaming responses for real-time interaction:
 
 ## Deployment
 
-### Cloudflare Dashboard Setup
+### 1. Turso Database Setup
 
-1. Create a Vectorize index:
+First, create a Turso database and get your credentials:
+
 ```bash
-npx wrangler vectorize create vibestar-docs --dimensions=1024 --metric=cosine
+# Install Turso CLI (if not installed)
+brew install tursodatabase/tap/turso  # macOS
+# or: curl -sSfL https://get.tur.so/install.sh | bash
+
+# Login to Turso
+turso auth login
+
+# Create a new database
+turso db create vibestar
+
+# Get the database URL
+turso db show vibestar --url
+# Output: libsql://vibestar-xxxxx.turso.io
+
+# Create an auth token
+turso db tokens create vibestar
+# Output: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
 ```
 
-2. Set production secrets:
+Save these values - you'll need them for the secrets below.
+
+### 2. Cloudflare Setup
+
+Create required Cloudflare resources:
+
 ```bash
+# Login to Cloudflare (if not already)
+npx wrangler login
+
+# Create Vectorize index for RAG
+# Note: plamo-embedding-1b outputs 2048 dims, truncated to 1536 for Vectorize
+npx wrangler vectorize create vibestar-docs --dimensions=1536 --metric=cosine
+```
+
+### 3. Set Production Secrets
+
+```bash
+# Authentication secret (generate a strong random string)
 npx wrangler secret put BETTER_AUTH_SECRET
+# Prompt: Enter a secret value: (paste a 32+ character random string)
+
+# Turso database URL (from step 1)
 npx wrangler secret put TURSO_DATABASE_URL
+# Prompt: Enter a secret value: libsql://vibestar-xxxxx.turso.io
+
+# Turso auth token (from step 1)
 npx wrangler secret put TURSO_AUTH_TOKEN
+# Prompt: Enter a secret value: eyJhbGciOiJFZERTQSIs...
+
+# Resend API key for production emails
 npx wrangler secret put RESEND_API_KEY
+# Prompt: Enter a secret value: re_xxxxx
 ```
 
-3. Deploy:
+### 4. Run Migrations on Production Database
+
+```bash
+# Set production database URL temporarily
+export TURSO_DATABASE_URL=libsql://vibestar-xxxxx.turso.io
+export TURSO_AUTH_TOKEN=eyJhbGciOiJFZERTQSIs...
+
+# Run migrations
+pnpm db:migrate
+```
+
+### 5. Deploy
+
 ```bash
 pnpm build && npx wrangler deploy
 ```
 
-### Environment Configuration
+### Environment Variables Reference
 
-Production environment variables (set via Cloudflare Dashboard or `wrangler secret`):
+| Variable | Where to Get | Description |
+|----------|--------------|-------------|
+| `BETTER_AUTH_SECRET` | Generate yourself | 32+ char random string for session signing |
+| `TURSO_DATABASE_URL` | `turso db show <name> --url` | Database connection URL |
+| `TURSO_AUTH_TOKEN` | `turso db tokens create <name>` | Database auth token |
+| `RESEND_API_KEY` | [Resend Dashboard](https://resend.com/api-keys) | Email service API key |
 
-| Variable | Description |
-|----------|-------------|
-| `BETTER_AUTH_SECRET` | Authentication secret key |
-| `TURSO_DATABASE_URL` | Turso database URL (libsql://...) |
-| `TURSO_AUTH_TOKEN` | Turso authentication token |
-| `RESEND_API_KEY` | Resend API key for emails |
+### Verify Deployment
+
+```bash
+# Check deployment status
+npx wrangler deployments list
+
+# Tail production logs
+npx wrangler tail
+```
 
 ## E2E Testing
 
