@@ -230,6 +230,131 @@ documents.post("/", async (c) => {
   );
 });
 
+// POST /api/documents/reindex - Reindex a document (delete vectors and re-process)
+// This is useful after metadata index creation
+documents.post("/reindex", async (c) => {
+  const env = c.env;
+
+  // Verify authentication
+  const auth = createAuth(env as AuthEnv, c.req.raw);
+  const sessionData = await auth.api.getSession({ headers: c.req.raw.headers });
+
+  if (!sessionData?.session?.userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const userId = sessionData.session.userId;
+
+  let body: { documentId: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON" }, 400);
+  }
+
+  if (!body.documentId) {
+    return c.json({ error: "documentId is required" }, 400);
+  }
+
+  const db = createDb(env);
+
+  // Get document
+  const doc = await db
+    .select()
+    .from(document)
+    .where(eq(document.id, body.documentId))
+    .limit(1);
+
+  if (doc.length === 0) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc[0].userId !== userId) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  // Get existing chunks to find vector IDs
+  const chunks = await db
+    .select()
+    .from(documentChunk)
+    .where(eq(documentChunk.documentId, body.documentId));
+
+  const vectorIds = chunks
+    .map((chunk) => chunk.vectorId)
+    .filter((id): id is string => id !== null);
+
+  // Delete existing vectors
+  if (vectorIds.length > 0) {
+    try {
+      await deleteDocumentVectors(c.env.VECTOR_INDEX, vectorIds);
+      console.log(`Deleted ${vectorIds.length} vectors for document ${body.documentId}`);
+    } catch (error) {
+      console.error("Failed to delete vectors:", error);
+    }
+  }
+
+  // Delete existing chunks
+  await db.delete(documentChunk).where(eq(documentChunk.documentId, body.documentId));
+
+  // Update status to processing
+  await db
+    .update(document)
+    .set({ status: "processing", updatedAt: new Date() })
+    .where(eq(document.id, body.documentId));
+
+  // Re-process document
+  const docProjectId = doc[0].projectId;
+  const content = doc[0].content;
+
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        const { chunkIds, vectorIds: newVectorIds } = await processDocument(
+          env,
+          doc[0].id,
+          content,
+          docProjectId
+        );
+
+        const newChunks: NewDocumentChunk[] = chunkIds.map((chunkId, index) => ({
+          id: chunkId,
+          documentId: doc[0].id,
+          chunkIndex: index,
+          content: content.slice(
+            index * 450,
+            Math.min((index + 1) * 500, content.length)
+          ),
+          vectorId: newVectorIds[index],
+        }));
+
+        if (newChunks.length > 0) {
+          await db.insert(documentChunk).values(newChunks);
+        }
+
+        await db
+          .update(document)
+          .set({ status: "ready", updatedAt: new Date() })
+          .where(eq(document.id, doc[0].id));
+
+        console.log(`Document ${doc[0].id} reindexed successfully`);
+      } catch (error) {
+        console.error(`Document reindexing failed:`, error);
+
+        await db
+          .update(document)
+          .set({ status: "failed", updatedAt: new Date() })
+          .where(eq(document.id, doc[0].id));
+      }
+    })()
+  );
+
+  return c.json({
+    documentId: body.documentId,
+    status: "reindexing",
+    message: "Document reindexing started",
+  });
+});
+
 // DELETE /api/documents - Delete a document
 documents.delete("/", async (c) => {
   const env = c.env;

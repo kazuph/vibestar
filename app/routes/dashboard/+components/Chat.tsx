@@ -221,7 +221,18 @@ export function Chat({ conversationId: initialConversationId, projectId, project
                       : "border border-warm-200 bg-warm-50 text-warm-900"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="whitespace-pre-wrap">{message.content || (isLoading && message.role === "assistant" ? "" : message.content)}</p>
+                  {/* Show loading animation for empty assistant message while loading */}
+                  {isLoading && message.role === "assistant" && !message.content && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-warm-500">Thinking</span>
+                      <span className="flex gap-0.5">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-warm-400" style={{ animationDelay: "0ms" }}></span>
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-warm-400" style={{ animationDelay: "150ms" }}></span>
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-warm-400" style={{ animationDelay: "300ms" }}></span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

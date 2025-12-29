@@ -205,7 +205,15 @@ projects.delete("/", async (c) => {
       isDefault: true,
     };
     await db.insert(project).values(newDefaultProject);
-    defaultProject = [{ ...newDefaultProject, createdAt: new Date(), updatedAt: new Date() }];
+    defaultProject = [{
+      id: newDefaultProject.id,
+      userId: newDefaultProject.userId,
+      name: newDefaultProject.name,
+      description: newDefaultProject.description ?? null,
+      isDefault: newDefaultProject.isDefault ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }];
   }
 
   // Move documents to default project

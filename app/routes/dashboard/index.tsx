@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { redirect, Link } from "react-router";
 import type { Route } from "./+types/index";
-import { createAuth, type AuthEnv } from "~/lib/auth.server";
-import { createDb } from "~/lib/db/client";
-import { document } from "~/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { createAuth } from "~/lib/auth.server";
 import { useSession, signOut } from "~/lib/auth.client";
 import { useNavigate } from "react-router";
 import { Chat } from "./+components/Chat";
-import { DocumentUpload } from "./+components/DocumentUpload";
-import { DocumentsList } from "./+components/DocumentsList";
 import { ProjectsList } from "./+components/ProjectsList";
 import type { Env } from "../../../server/load-context";
 
-type TabId = "account" | "chat" | "documents" | "projects";
+type TabId = "account" | "projects" | "chat";
 
 export const meta: Route.MetaFunction = () => {
   return [
@@ -23,19 +18,7 @@ export const meta: Route.MetaFunction = () => {
 };
 
 /**
- * Document type for loader data
- */
-interface DocumentData {
-  id: string;
-  title: string;
-  mimeType: string;
-  status: "processing" | "ready" | "failed";
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Server-side loader to check authentication and fetch documents
+ * Server-side loader to check authentication
  * Redirects to signin if not authenticated
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -50,29 +33,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     throw redirect("/auth/signin");
   }
 
-  // Fetch user's documents server-side to avoid client-side auth issues
-  // Wrap in try-catch to prevent document fetch failures from breaking the dashboard
-  let documents: DocumentData[] = [];
-  try {
-    const db = createDb(env);
-    const result = await db
-      .select({
-        id: document.id,
-        title: document.title,
-        mimeType: document.mimeType,
-        status: document.status,
-        createdAt: document.createdAt,
-        updatedAt: document.updatedAt,
-      })
-      .from(document)
-      .where(eq(document.userId, session.user.id))
-      .orderBy(desc(document.createdAt));
-    documents = result as DocumentData[];
-  } catch (error) {
-    // Log error but don't fail the page - documents are optional
-    console.error("Failed to fetch documents:", error);
-  }
-
   return {
     user: {
       id: session.user.id,
@@ -80,7 +40,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       name: session.user.name,
       emailVerified: session.user.emailVerified,
     },
-    documents,
   };
 }
 
@@ -88,29 +47,16 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "account", label: "Account" },
   { id: "projects", label: "Projects" },
   { id: "chat", label: "AI Chat" },
-  { id: "documents", label: "Documents" },
 ];
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<TabId>("account");
-  const [documentRefreshTrigger, setDocumentRefreshTrigger] = useState(0);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null);
-
-  const handleProjectSelect = (projectId: string | null, projectName: string | null) => {
-    setSelectedProjectId(projectId);
-    setSelectedProjectName(projectName);
-  };
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth/signin");
-  };
-
-  const handleDocumentUploaded = () => {
-    setDocumentRefreshTrigger((prev) => prev + 1);
   };
 
   // Use loader data for initial render, session hook for updates
@@ -227,65 +173,18 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         {/* Projects Tab */}
         {activeTab === "projects" && (
           <div className="rounded-lg border border-warm-200 bg-white p-6">
-            <ProjectsList
-              selectedProjectId={selectedProjectId}
-              onProjectSelect={handleProjectSelect}
-            />
+            <ProjectsList />
           </div>
         )}
 
-        {/* Chat Tab */}
+        {/* Chat Tab - Simple RAG-free chat */}
         {activeTab === "chat" && (
-          <div className="space-y-6">
-            <div className="rounded-lg border border-warm-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-warm-900">AI Chat</h2>
-              {selectedProjectId ? (
-                <p className="mb-6 text-sm text-warm-600">
-                  Chatting with project context. RAG is automatically enabled.
-                </p>
-              ) : (
-                <p className="mb-6 text-sm text-warm-600">
-                  No project selected. Go to the Projects tab to select a project for RAG-enabled chat.
-                </p>
-              )}
-              <Chat projectId={selectedProjectId} projectName={selectedProjectName} />
-            </div>
-          </div>
-        )}
-
-        {/* Documents Tab */}
-        {activeTab === "documents" && (
-          <div className="space-y-6">
-            <div className="rounded-lg border border-warm-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-warm-900">
-                Document Management
-              </h2>
-              {selectedProjectId ? (
-                <p className="mb-6 text-sm text-warm-600">
-                  Upload documents to the selected project. They will be used for RAG when chatting with this project.
-                </p>
-              ) : (
-                <p className="mb-6 text-sm text-warm-600">
-                  No project selected. Documents will be uploaded to the default "Uncategorized" project.
-                  Go to the Projects tab to select or create a project.
-                </p>
-              )}
-              <DocumentUpload
-                projectId={selectedProjectId}
-                onUploadComplete={handleDocumentUploaded}
-              />
-            </div>
-
-            <div className="rounded-lg border border-warm-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-warm-900">
-                {selectedProjectId ? "Project Documents" : "All Documents"}
-              </h2>
-              <DocumentsList
-                projectId={selectedProjectId}
-                refreshTrigger={documentRefreshTrigger}
-                initialDocuments={loaderData.documents}
-              />
-            </div>
+          <div className="rounded-lg border border-warm-200 bg-white p-6">
+            <h2 className="mb-2 text-lg font-semibold text-warm-900">AI Chat</h2>
+            <p className="mb-6 text-sm text-warm-600">
+              General AI chat without RAG context. For project-specific chat with RAG, go to the Projects tab and select a project.
+            </p>
+            <Chat />
           </div>
         )}
       </main>
