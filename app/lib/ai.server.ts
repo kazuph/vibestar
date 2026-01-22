@@ -29,11 +29,7 @@ export interface RagContext {
 /**
  * Split text into overlapping chunks for embedding
  */
-export function chunkText(
-  text: string,
-  chunkSize = CHUNK_SIZE,
-  overlap = CHUNK_OVERLAP
-): string[] {
+export function chunkText(text: string, chunkSize = CHUNK_SIZE, overlap = CHUNK_OVERLAP): string[] {
   const chunks: string[] = [];
   let start = 0;
 
@@ -52,10 +48,7 @@ export function chunkText(
  * Note: plamo-embedding-1b outputs 2048 dimensions, but Vectorize max is 1536
  * We truncate to VECTORIZE_DIMENSIONS to fit the index
  */
-export async function generateEmbeddings(
-  ai: Ai,
-  texts: string[]
-): Promise<number[][]> {
+export async function generateEmbeddings(ai: Ai, texts: string[]): Promise<number[][]> {
   const result = await ai.run(EMBEDDING_MODEL, {
     text: texts,
   });
@@ -77,7 +70,7 @@ export async function storeVectors(
     id: string;
     values: number[];
     metadata: Record<string, string>;
-  }[]
+  }[],
 ): Promise<void> {
   if (vectors.length === 0) return;
 
@@ -92,7 +85,7 @@ export async function queryVectors(
   vectorIndex: VectorizeIndex,
   queryVector: number[],
   topK = 5,
-  projectId?: string
+  projectId?: string,
 ): Promise<VectorizeMatches> {
   const queryOptions: { topK: number; returnMetadata: "all"; filter?: Record<string, string> } = {
     topK,
@@ -111,12 +104,7 @@ export async function queryVectors(
  * Perform RAG query: embed query, search vectors, return contexts
  * When projectId is provided, only search within that project's documents
  */
-export async function performRagQuery(
-  env: Env,
-  query: string,
-  projectId: string,
-  topK = 5
-): Promise<RagContext[]> {
+export async function performRagQuery(env: Env, query: string, projectId: string, topK = 5): Promise<RagContext[]> {
   // Generate embedding for query
   const [queryEmbedding] = await generateEmbeddings(env.AI, [query]);
 
@@ -136,15 +124,13 @@ export async function performRagQuery(
  */
 export function buildSystemPromptWithContext(
   contexts: RagContext[],
-  basePrompt = "You are a helpful AI assistant."
+  basePrompt = "You are a helpful AI assistant.",
 ): string {
   if (contexts.length === 0) {
     return basePrompt;
   }
 
-  const contextText = contexts
-    .map((ctx, i) => `[Document ${i + 1}]\n${ctx.content}`)
-    .join("\n\n");
+  const contextText = contexts.map((ctx, i) => `[Document ${i + 1}]\n${ctx.content}`).join("\n\n");
 
   return `${basePrompt}
 
@@ -176,7 +162,7 @@ interface ResponsesApiOutput {
 export async function chatCompletionStream(
   ai: Ai,
   messages: ChatMessage[],
-  systemPrompt?: string
+  systemPrompt?: string,
 ): Promise<ReadableStream<Uint8Array>> {
   // Build conversation text from messages
   // Format: "User: message\nAssistant: message\n..."
@@ -194,11 +180,14 @@ export async function chatCompletionStream(
 
   let response: ResponsesApiOutput;
   try {
-    response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ResponsesApiOutput> }).run(CHAT_MODEL, {
-      instructions: systemPrompt || "You are a helpful AI assistant.",
-      input: conversationText,
-      stream: false,
-    });
+    response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ResponsesApiOutput> }).run(
+      CHAT_MODEL,
+      {
+        instructions: systemPrompt || "You are a helpful AI assistant.",
+        input: conversationText,
+        stream: false,
+      },
+    );
     console.log("[AI] Response received:", JSON.stringify(response).substring(0, 500));
   } catch (aiError) {
     console.error("[AI] Workers AI call failed:", aiError);
@@ -233,11 +222,7 @@ export async function chatCompletionStream(
  * Chat completion without streaming (for simpler use cases)
  * Uses Responses API format: instructions + input (string)
  */
-export async function chatCompletion(
-  ai: Ai,
-  messages: ChatMessage[],
-  systemPrompt?: string
-): Promise<string> {
+export async function chatCompletion(ai: Ai, messages: ChatMessage[], systemPrompt?: string): Promise<string> {
   // Build conversation text from messages
   const conversationText = messages
     .map((msg) => {
@@ -251,11 +236,14 @@ export async function chatCompletion(
 
   let response: ResponsesApiOutput;
   try {
-    response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ResponsesApiOutput> }).run(CHAT_MODEL, {
-      instructions: systemPrompt || "You are a helpful AI assistant.",
-      input: conversationText,
-      stream: false,
-    });
+    response = await (ai as unknown as { run: (model: string, options: unknown) => Promise<ResponsesApiOutput> }).run(
+      CHAT_MODEL,
+      {
+        instructions: systemPrompt || "You are a helpful AI assistant.",
+        input: conversationText,
+        stream: false,
+      },
+    );
     console.log("[AI] Response received:", JSON.stringify(response).substring(0, 500));
   } catch (aiError) {
     console.error("[AI] Workers AI call failed:", aiError);
@@ -288,7 +276,7 @@ export async function processDocument(
   env: Env,
   documentId: string,
   content: string,
-  projectId: string
+  projectId: string | null,
 ): Promise<{ chunkIds: string[]; vectorIds: string[] }> {
   const chunks = chunkText(content);
   const embeddings = await generateEmbeddings(env.AI, chunks);
@@ -308,15 +296,19 @@ export async function processDocument(
     chunkIds.push(chunkId);
     vectorIds.push(vectorId);
 
+    const metadata: Record<string, string> = {
+      documentId,
+      chunkIndex: String(i),
+      content: chunks[i],
+    };
+    if (projectId) {
+      metadata.projectId = projectId;
+    }
+
     vectors.push({
       id: vectorId,
       values: embeddings[i],
-      metadata: {
-        documentId,
-        projectId,
-        chunkIndex: String(i),
-        content: chunks[i],
-      },
+      metadata,
     });
   }
 
@@ -329,10 +321,7 @@ export async function processDocument(
 /**
  * Delete vectors for a document
  */
-export async function deleteDocumentVectors(
-  vectorIndex: VectorizeIndex,
-  vectorIds: string[]
-): Promise<void> {
+export async function deleteDocumentVectors(vectorIndex: VectorizeIndex, vectorIds: string[]): Promise<void> {
   if (vectorIds.length === 0) return;
 
   await vectorIndex.deleteByIds(vectorIds);
